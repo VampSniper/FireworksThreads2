@@ -1,4 +1,5 @@
 import javax.swing.JFrame;
+import java.awt.Color;
 
 /**
  * ============================================================
@@ -17,22 +18,21 @@ public class MainWindow extends JFrame {
     // 𝙲𝚘𝚗𝚜𝚝𝚛𝚞𝚌𝚝𝚘𝚛
     //---------------------------------------------------------
 
-    public MainWindow() {
+  public MainWindow() {
 
-        setTitle("Fireworks Threads Simulator");
+    setTitle("Simulador de Hilos");
+    setSize(1200, 820);
+    setLocationRelativeTo(null);
+    setResizable(false);
+    setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        setSize(1200, 820);
+    setBackground(new Color(8, 8, 12));
+    getContentPane().setBackground(new Color(8, 8, 12));
 
-        setLocationRelativeTo(null);
+    FireworkPanel panel = new FireworkPanel();
+    add(panel);
 
-        setResizable(false);
-
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-        add(new FireworkPanel());
-
-        setVisible(true);
-
-    }
+    setVisible(true);
+}
 
 }

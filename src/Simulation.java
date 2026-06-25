@@ -8,20 +8,31 @@ import java.util.concurrent.ThreadLocalRandom;
  * Clase: Simulation
  * ============================================================
  *
- * Responsabilidad:
- * Administrar toda la simulación de partículas.
- *
- * Funciones:
- *
- * • Crear explosiones
- * • Actualizar partículas
- * • Eliminar partículas muertas
- * • Controlar la cantidad de hilos utilizados
+ * Modos:
+ * • PARTICLES — simulación de fuegos artificiales
+ * • MATRIX    — multiplicación de matrices (CPU intensivo)
+ * • FILE      — escritura de archivos (I/O intensivo)
  *
  * ============================================================
  */
 
 public class Simulation {
+
+    // =========================================================
+    // Modos
+    // =========================================================
+
+    public enum Mode {
+        PARTICLES,
+        MATRIX,
+        FILE
+    }
+
+    //---------------------------------------------------------
+    // Modo actual
+    //---------------------------------------------------------
+
+    private Mode mode = Mode.PARTICLES;
 
     //---------------------------------------------------------
     // Lista de partículas
@@ -42,6 +53,12 @@ public class Simulation {
     private int threadCount;
 
     //---------------------------------------------------------
+    // Último tiempo medido (matriz / archivo)
+    //---------------------------------------------------------
+
+    private long lastElapsed = 0;
+
+    //---------------------------------------------------------
     // Generador aleatorio
     //---------------------------------------------------------
 
@@ -52,45 +69,41 @@ public class Simulation {
     //---------------------------------------------------------
 
     public Simulation() {
-
         particles = new ArrayList<>();
-
         frameCounter = 0;
-
         threadCount = 1;
-
         random = ThreadLocalRandom.current();
-
     }
 
     //---------------------------------------------------------
-    // Obtener partículas
+    // Getters / Setters
     //---------------------------------------------------------
 
-    public List<Particle> getParticles() {
+    public List<Particle> getParticles() { return particles; }
 
-        return particles;
+    public void setThreadCount(int threadCount) { this.threadCount = threadCount; }
 
+    public int getThreadCount() { return threadCount; }
+
+    public Mode getMode() { return mode; }
+
+    public void setMode(Mode mode) {
+        this.mode = mode;
+        particles.clear();
+        frameCounter = 0;
+        lastElapsed = 0;
     }
 
-    //---------------------------------------------------------
-    // Configurar número de hilos
-    //---------------------------------------------------------
-
-    public void setThreadCount(int threadCount) {
-
-        this.threadCount = threadCount;
-
-    }
+    public long getLastElapsed() { return lastElapsed; }
 
     //---------------------------------------------------------
-    // Obtener número de hilos
+    // Reset completo — limpia partículas y contadores
     //---------------------------------------------------------
 
-    public int getThreadCount() {
-
-        return threadCount;
-
+    public void reset() {
+        particles.clear();
+        frameCounter = 0;
+        lastElapsed = 0;
     }
 
     //---------------------------------------------------------
@@ -99,42 +112,61 @@ public class Simulation {
 
     public void update(int width, int height) {
 
-        //---------------------------------------------
-        // Contador de frames
-        //---------------------------------------------
+        switch (mode) {
+            case PARTICLES -> updateParticles(width, height);
+            case MATRIX    -> updateMatrix();
+            case FILE      -> updateFile();
+        }
+
+    }
+
+    //---------------------------------------------------------
+    // Modo PARTICLES
+    //---------------------------------------------------------
+
+    private void updateParticles(int width, int height) {
 
         frameCounter++;
 
-        //---------------------------------------------
-        // Crear explosión periódicamente
-        //---------------------------------------------
-
         if (frameCounter >= 45) {
-
             frameCounter = 0;
-
             createExplosion(width, height);
-
         }
-
-        //---------------------------------------------
-        // Actualizar partículas usando multihilo
-        //---------------------------------------------
 
         if (!particles.isEmpty()) {
-
-            ThreadManager.updateParticles(
-                    particles,
-                    threadCount
-            );
-
+            ThreadManager.updateParticles(particles, threadCount);
         }
 
-        //---------------------------------------------
-        // Eliminar partículas muertas
-        //---------------------------------------------
-
         particles.removeIf(p -> !p.isAlive());
+    }
+
+    //---------------------------------------------------------
+    // Modo MATRIX
+    //---------------------------------------------------------
+
+    private void updateMatrix() {
+
+        frameCounter++;
+
+        if (frameCounter >= 60) {
+            frameCounter = 0;
+            lastElapsed = ThreadManager.multiplyMatrices(threadCount);
+        }
+
+    }
+
+    //---------------------------------------------------------
+    // Modo FILE
+    //---------------------------------------------------------
+
+    private void updateFile() {
+
+        frameCounter++;
+
+        if (frameCounter >= 120) {
+            frameCounter = 0;
+            lastElapsed = ThreadManager.writeFiles(threadCount);
+        }
 
     }
 
@@ -145,43 +177,20 @@ public class Simulation {
     private void createExplosion(int width, int height) {
 
         int x = random.nextInt(150, width - 150);
-
         int y = random.nextInt(100, height / 2);
 
         Color[] colors = {
-
                 Assets.CYAN,
                 Assets.PINK,
                 Assets.YELLOW,
                 Assets.GREEN,
                 Assets.PURPLE
-
         };
 
         Color color = colors[random.nextInt(colors.length)];
 
-        //-----------------------------------------------------
-        // Crear partículas
-        //-----------------------------------------------------
-
-        for (int i = 0; i < 250; i++) {
-
-            particles.add(
-
-                    Particle.createExplosionParticle(
-
-                            x,
-
-                            y,
-
-                            color
-
-                    )
-
-            );
-
+        for (int i = 0; i < 2000; i++) {
+            particles.add(Particle.createExplosionParticle(x, y, color));
         }
-
     }
-
 }
